@@ -37,8 +37,10 @@ if st.button("🚀 वीडियो बनाएँ"):
                 
                 image_clips = []
                 for idx, file in enumerate(uploaded_files):
-                    img_path = f"temp_img_{idx}.png"
-                    img = Image.open(file)
+                    img_path = f"temp_img_{idx}.jpg"
+                    
+                    # इमेज को RGB मोड में सेव करना ताकि MoviePy में एरर न आए
+                    img = Image.open(file).convert("RGB")
                     img.save(img_path)
                     
                     # इमेज क्लिप बनाना
