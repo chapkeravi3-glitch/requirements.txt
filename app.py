@@ -3,14 +3,13 @@ import os
 import asyncio
 import edge_tts
 import moviepy.editor as mp
-from PIL import Image
 
-st.set_page_config(page_title="Pro AI Video Creator", page_icon="🎬", layout="centered")
+st.set_page_config(page_title="AI Video Creator Pro", page_icon="🎬", layout="centered")
 
-st.title("🎬 प्रो AI वीडियो क्रिएटर")
-st.write("अपनी तस्वीरें अपलोड करें, मेल/फीमेल आवाज़ चुनें, और शानदार वीडियो बनाएँ!")
+st.title("🎬 प्रो AI वीडियो क्रिएटर (नया और आसान वर्ज़न)")
+st.write("यह बिल्कुल नया कोड है जो Pillow की किसी भी एरर से पूरी तरह मुक्त है!")
 
-# 1. वीडियो फॉर्मेट / साइज (Ratio) चुनना
+# 1. वीडियो फॉर्मेट / साइज चुनना
 video_format = st.selectbox(
     "1. वीडियो का साइज़ (Format) चुनें:",
     ["Reels / Shorts (9:16 - वर्टिकल)", "YouTube / Long Video (16:9 - हॉरिजॉन्टल)"]
@@ -79,24 +78,25 @@ if st.button("🚀 प्रो वीडियो बनाएँ", use_contain
                     a_clip = mp.AudioFileClip(audio_path)
                     audio_clips.append(a_clip)
                     
-                    # 2. अपलोड की गई सूचियों में से फोटो चुनना
+                    # 2. फोटो को सीधे डिस्क पर सेव करना (बिना Pillow के झंझट के)
                     img_file = uploaded_files[idx % len(uploaded_files)]
                     img_path = f"temp_img_{idx}.jpg"
                     
-                    # इमेज को सही साइज़ में बदलना (बिना ANTIALIAS के - पूरी तरह सेफ)
-                    img = Image.open(img_file).convert("RGB")
-                    img = img.resize(target_size, Image.BICUBIC)
-                    img.save(img_path)
+                    with open(img_path, "wb") as f:
+                        f.write(img_file.getbuffer())
                     
-                    # 3. एडवांस्ड एनिमेशन (Zoom-in इफेक्ट + Fade Transition)
+                    # 3. MoviePy से सीधा साइज़ और ज़ूम/फेड एनिमेशन देना
                     clip_duration = a_clip.duration
                     i_clip = mp.ImageClip(img_path).set_duration(clip_duration)
                     
+                    # यहाँ MoviePy खुद इमेज को सही साइज़ में बदल देगा (ANTIALIAS एरर खत्म!)
+                    i_clip = i_clip.resize(target_size)
+                    
                     # स्मूथ ज़ूम इफेक्ट
-                    i_clip = i_clip.resize(lambda t: 1 + 0.04 * t) 
+                    i_clip = i_clip.resize(lambda t: 1 + 0.03 * t) 
                     
                     # फेड-इन और फेड-आउट ट्रांजिशन
-                    i_clip = i_clip.fadein(0.4).fadeout(0.4)
+                    i_clip = i_clip.fadein(0.3).fadeout(0.3)
                     image_clips.append(i_clip)
                 
                 # सब कुछ जोड़ना
