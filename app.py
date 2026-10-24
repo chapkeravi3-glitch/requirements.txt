@@ -1,59 +1,64 @@
 import streamlit as st
 import os
-from gtts import gTTS
+import asyncio
+import edge_tts
 import moviepy.editor as mp
 from PIL import Image
 
 st.set_page_config(page_title="Pro AI Video Creator", page_icon="🎬", layout="centered")
 
-st.title("🎬 प्रो AI वीडियो क्रिएटर")
-st.write("एक बार में ढेरों फोटो सेलेक्ट करें, रील्स/लॉन्ग वीडियो साइज़ चुनें, और वीडियो बनाएँ!")
+st.title("🎬 Pro AI Video Creator")
+st.write("Apni photos ek sath upload karein, Male/Female aawaj sunein, aur animated video banayein!")
 
-# 1. वीडियो फॉर्मेट / साइज (Ratio) चुनना
+# 1. Video Format / Size (Ratio) chunna
 video_format = st.selectbox(
-    "1. वीडियो का साइज़ (Format) चुनें:",
-    ["Reels / Shorts (9:16 - वर्टिकल)", "YouTube / Long Video (16:9 - हॉरिजॉन्टल)"]
+    "1. Video ka Size (Format) chunein:",
+    ["Reels / Shorts (9:16 - Vertical)", "YouTube / Long Video (16:9 - Horizontal)"]
 )
 
-# 2. आवाज़ का जेंडर (Voice Gender) चुनना
-voice_gender = st.selectbox(
-    "2. नरेटर की आवाज़ (Voice) चुनें:",
-    ["फीमेल आवाज़ (Female)", "मेल आवाज़ (Male टोन)"]
+# 2. Asli Male aur Female Aawaj chunna (100% Working)
+voice_option = st.selectbox(
+    "2. Narrator ki Aawaj (Voice) chunein:",
+    ["Female Aawaj (Swara)", "Male Aawaj (Madhur)"]
 )
 
-# 3. टेक्स्ट/नरेशन इनपुट
+# Voice Code set karna
+voice_code = "hi-IN-SwaraNeural" if "Swara" in voice_option else "hi-IN-MadhurNeural"
+
+# 3. Text / Narration Script Input
 script = st.text_area(
-    label="3. अपनी कहानी या नरेशन (Script) लिखें (हर लाइन में अलग बात लिखें):",
+    label="3. Apni kahani ya script likhein (Har line mein alag baat likhein):",
     value="",
     height=150,
-    placeholder="लाइन 1: एक सुंदर जंगल था...\nलाइन 2: वहाँ एक शेर रहता था..."
+    placeholder="Line 1: Ek sundar jungle tha...\nLine 2: Wahan ek sher rehta tha..."
 )
 
-# 4. एक साथ कई तस्वीरें (Multiple Images) एक ही बार में अपलोड करने का बॉक्स
+# 4. Ek sath dher saari photos upload karne ka option
 uploaded_files = st.file_uploader(
-    "4. अपनी तस्वीरें (Images) यहाँ एक साथ सेलेक्ट करें:", 
+    "4. Apni ya apni pasand ki photos yahan ek sath select karein:", 
     type=["jpg", "jpeg", "png"], 
     accept_multiple_files=True,
-    help="यहाँ से आप एक बार में 10-12 या जितनी चाहें उतनी तस्वीरें एक साथ टिक करके अपलोड कर सकते हैं।"
+    help="Phone gallery se ek sath multiple photos select karke upload karein."
 )
 
-# यदि तस्वीरें अपलोड हो गई हैं, तो उनकी संख्या और झलक दिखाएं
 if uploaded_files:
-    st.success(f"✅ कुल {len(uploaded_files)} तस्वीरें एक साथ सफलतापूर्वक आ गई हैं!")
-    
-    # अपलोड की गई फोटो को छोटी स्क्रीन पर लाइन से दिखाना ताकि पता चले कि सब आ गई हैं
-    cols = st.beta_columns(min(len(uploaded_files), 4)) if hasattr(st, "beta_columns") else []
-    
-# वीडियो बनाएँ बटन
-if st.button("🚀 प्रो वीडियो बनाएँ", use_container_width=True):
+    st.success(f"✅ Kul {len(uploaded_files)} photos safalpurvak upload ho gayi hain!")
+
+# Async Function - TTS aawaj generate karne ke liye
+async def generate_audio(text, voice, output_path):
+    communicate = edge_tts.Communicate(text, voice)
+    await communicate.save(output_path)
+
+# Video Banayein Button
+if st.button("🚀 Pro Video Banayein", use_container_width=True):
     if not script.strip():
-        st.error("⚠️ कृपया पहले अपनी स्क्रिप्ट लिखें!")
+        st.error("⚠️ Kripya pehle apni script likhein!")
     elif not uploaded_files:
-        st.error("⚠️ कृपया कम से कम 1 या अधिक तस्वीरें अपलोड करें!")
+        st.error("⚠️ Kripya kam se kam 1 ya adhik photos upload karein!")
     else:
-        with st.spinner("⏳ सभी फोटो और ऑडियो को मिलाकर वीडियो प्रोसेस हो रहा है... कृपया प्रतीक्षा करें..."):
+        with st.spinner("⏳ Shandar animation aur HD audio ke sath video process ho raha hai... Kripya pratiksha karein..."):
             try:
-                # स्क्रिप्ट को लाइनों में तोड़ना
+                # Script ko lines mein todna
                 lines = [line.strip() for line in script.split('\n') if line.strip()]
                 if not lines:
                     lines = [script]
@@ -61,25 +66,21 @@ if st.button("🚀 प्रो वीडियो बनाएँ", use_contain
                 audio_clips = []
                 image_clips = []
                 
-                # मेल और फीमेल आवाज़ का टोन सेट करना
-                tld_setting = 'com' if voice_gender == "फीमेल आवाज़ (Female)" else 'co.uk'
-                
-                # आयाम (Dimensions) तय करना
+                # Dimensions tay karna
                 if "9:16" in video_format:
-                    target_size = (1080, 1920) # रील्स साइज
+                    target_size = (1080, 1920) # Reels Size
                 else:
-                    target_size = (1920, 1080) # लॉन्ग वीडियो साइज
+                    target_size = (1920, 1080) # Long Video Size
                 
                 for idx, line in enumerate(lines):
-                    # 1. ऑडियो बनाना
-                    tts = gTTS(text=line, lang='hi', tld=tld_setting, slow=False)
+                    # 1. Audio banana (Male ya Female voice ke sath)
                     audio_path = f"temp_audio_{idx}.mp3"
-                    tts.save(audio_path)
+                    asyncio.run(generate_audio(line, voice_code, audio_path))
                     
                     a_clip = mp.AudioFileClip(audio_path)
                     audio_clips.append(a_clip)
                     
-                    # 2. एक साथ अपलोड की गई लिस्ट में से फोटो उठाना
+                    # 2. Upload ki gayi photos mein se photo chunna
                     img_file = uploaded_files[idx % len(uploaded_files)]
                     img_path = f"temp_img_{idx}.jpg"
                     
@@ -87,12 +88,18 @@ if st.button("🚀 प्रो वीडियो बनाएँ", use_contain
                     img = img.resize(target_size, Image.Resampling.LANCZOS)
                     img.save(img_path)
                     
-                    # 3. इमेज क्लिप और स्मूथ फेड एनीमेशन
-                    i_clip = mp.ImageClip(img_path).set_duration(a_clip.duration)
-                    i_clip = i_clip.fadein(0.3).fadeout(0.3)
+                    # 3. Advanced Animation (Zoom-in effect + Fade Transition)
+                    clip_duration = a_clip.duration
+                    i_clip = mp.ImageClip(img_path).set_duration(clip_duration)
+                    
+                    # Smooth Zoom Effect
+                    i_clip = i_clip.resize(lambda t: 1 + 0.04 * t) 
+                    
+                    # Fade-in aur Fade-out transition
+                    i_clip = i_clip.fadein(0.4).fadeout(0.4)
                     image_clips.append(i_clip)
                 
-                # सब कुछ जोड़ना
+                # Sab kuch jodna
                 final_audio = mp.concatenate_audioclips(audio_clips)
                 final_video = mp.concatenate_videoclips(image_clips, method="compose")
                 final_video = final_video.set_audio(final_audio)
@@ -105,14 +112,14 @@ if st.button("🚀 प्रो वीडियो बनाएँ", use_contain
                     audio_codec="aac"
                 )
                 
-                # सफलता और वीडियो दिखाना
-                st.success("🎉 आपका शानदार वीडियो बनकर तैयार है!")
+                # Safalta aur video dikhana
+                st.success("🎉 Aapka shandar animated video ban kar taiyar hai!")
                 st.video(output_video_path)
                 
-                # डाउनलोड बटन
+                # Download Button
                 with open(output_video_path, "rb") as file:
                     st.download_button(
-                        label="📥 वीडियो डाउनलोड करें",
+                        label="📥 Video Download Karein",
                         data=file,
                         file_name="my_pro_video.mp4",
                         mime="video/mp4",
@@ -120,4 +127,4 @@ if st.button("🚀 प्रो वीडियो बनाएँ", use_contain
                     )
                     
             except Exception as e:
-                st.error(f"❌ वीडियो बनाने में समस्या आई: {e}")
+                st.error(f"❌ Video banane mein samasya aayi: {e}")
