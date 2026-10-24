@@ -83,7 +83,7 @@ if st.button("🚀 प्रो वीडियो बनाएँ", use_contain
                     img_file = uploaded_files[idx % len(uploaded_files)]
                     img_path = f"temp_img_{idx}.jpg"
                     
-                    # इमेज को सही साइज़ में बदलना (बिना किसी ANTIALIAS एरर के)
+                    # इमेज को सही साइज़ में बदलना (बिना ANTIALIAS के - पूरी तरह सेफ)
                     img = Image.open(img_file).convert("RGB")
                     img = img.resize(target_size, Image.BICUBIC)
                     img.save(img_path)
