@@ -90,7 +90,7 @@ if st.button("🚀 प्रो वीडियो बनाएँ", use_contain
                     i_clip = mp.ImageClip(img_path).set_duration(clip_duration)
                     
                     # यहाँ MoviePy खुद इमेज को सही साइज़ में बदल देगा (ANTIALIAS एरर खत्म!)
-                    i_clip = i_clip.resize(target_size)
+                    i_clip = i_clip.resize(target_size o )
                     
                     # स्मूथ ज़ूम इफेक्ट
                     i_clip = i_clip.resize(lambda t: 1 + 0.03 * t) 
