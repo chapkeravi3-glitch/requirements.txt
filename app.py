@@ -6,8 +6,8 @@ from PIL import Image
 
 st.set_page_config(page_title="Pro AI Video Creator", page_icon="🎬", layout="centered")
 
-st.title("🎬 प्रो AI वीडियो क्रिएटर (एडवांस्ड)")
-st.write("एक साथ कई फोटो अपलोड करें, रील्स/लॉन्ग वीडियो साइज़ चुनें, और मेल/फीमेल आवाज़ का मज़ा लें!")
+st.title("🎬 प्रो AI वीडियो क्रिएटर")
+st.write("एक बार में ढेरों फोटो सेलेक्ट करें, रील्स/लॉन्ग वीडियो साइज़ चुनें, और वीडियो बनाएँ!")
 
 # 1. वीडियो फॉर्मेट / साइज (Ratio) चुनना
 video_format = st.selectbox(
@@ -29,13 +29,21 @@ script = st.text_area(
     placeholder="लाइन 1: एक सुंदर जंगल था...\nलाइन 2: वहाँ एक शेर रहता था..."
 )
 
-# 4. एक साथ कई तस्वीरें (10-12 या ज़्यादा) अपलोड करने का आप्शन
+# 4. एक साथ कई तस्वीरें (Multiple Images) एक ही बार में अपलोड करने का बॉक्स
 uploaded_files = st.file_uploader(
-    "4. अपनी तस्वीरें (Images) एक साथ सेलेक्ट करके अपलोड करें:", 
+    "4. अपनी तस्वीरें (Images) यहाँ एक साथ सेलेक्ट करें:", 
     type=["jpg", "jpeg", "png"], 
-    accept_multiple_files=True
+    accept_multiple_files=True,
+    help="यहाँ से आप एक बार में 10-12 या जितनी चाहें उतनी तस्वीरें एक साथ टिक करके अपलोड कर सकते हैं।"
 )
 
+# यदि तस्वीरें अपलोड हो गई हैं, तो उनकी संख्या और झलक दिखाएं
+if uploaded_files:
+    st.success(f"✅ कुल {len(uploaded_files)} तस्वीरें एक साथ सफलतापूर्वक आ गई हैं!")
+    
+    # अपलोड की गई फोटो को छोटी स्क्रीन पर लाइन से दिखाना ताकि पता चले कि सब आ गई हैं
+    cols = st.beta_columns(min(len(uploaded_files), 4)) if hasattr(st, "beta_columns") else []
+    
 # वीडियो बनाएँ बटन
 if st.button("🚀 प्रो वीडियो बनाएँ", use_container_width=True):
     if not script.strip():
@@ -43,7 +51,7 @@ if st.button("🚀 प्रो वीडियो बनाएँ", use_contain
     elif not uploaded_files:
         st.error("⚠️ कृपया कम से कम 1 या अधिक तस्वीरें अपलोड करें!")
     else:
-        with st.spinner("⏳ एडवांस्ड इफ़ेक्ट और ऑडियो के साथ वीडियो प्रोसेस हो रहा है... कृपया प्रतीक्षा करें..."):
+        with st.spinner("⏳ सभी फोटो और ऑडियो को मिलाकर वीडियो प्रोसेस हो रहा है... कृपया प्रतीक्षा करें..."):
             try:
                 # स्क्रिप्ट को लाइनों में तोड़ना
                 lines = [line.strip() for line in script.split('\n') if line.strip()]
@@ -53,7 +61,7 @@ if st.button("🚀 प्रो वीडियो बनाएँ", use_contain
                 audio_clips = []
                 image_clips = []
                 
-                # मेल और फीमेल आवाज़ का टोन सेट करना (tld के ज़रिए)
+                # मेल और फीमेल आवाज़ का टोन सेट करना
                 tld_setting = 'com' if voice_gender == "फीमेल आवाज़ (Female)" else 'co.uk'
                 
                 # आयाम (Dimensions) तय करना
@@ -63,7 +71,7 @@ if st.button("🚀 प्रो वीडियो बनाएँ", use_contain
                     target_size = (1920, 1080) # लॉन्ग वीडियो साइज
                 
                 for idx, line in enumerate(lines):
-                    # 1. ऑडियो बनाना (मेल/फीमेल एक्सेंट के साथ)
+                    # 1. ऑडियो बनाना
                     tts = gTTS(text=line, lang='hi', tld=tld_setting, slow=False)
                     audio_path = f"temp_audio_{idx}.mp3"
                     tts.save(audio_path)
@@ -71,7 +79,7 @@ if st.button("🚀 प्रो वीडियो बनाएँ", use_contain
                     a_clip = mp.AudioFileClip(audio_path)
                     audio_clips.append(a_clip)
                     
-                    # 2. एक साथ अपलोड की गई फोटो में से एक-एक करके फोटो चुनना
+                    # 2. एक साथ अपलोड की गई लिस्ट में से फोटो उठाना
                     img_file = uploaded_files[idx % len(uploaded_files)]
                     img_path = f"temp_img_{idx}.jpg"
                     
@@ -79,10 +87,8 @@ if st.button("🚀 प्रो वीडियो बनाएँ", use_contain
                     img = img.resize(target_size, Image.Resampling.LANCZOS)
                     img.save(img_path)
                     
-                    # 3. इमेज क्लिप और ज़ूम/फेड एनीमेशन इफ़ेक्ट
+                    # 3. इमेज क्लिप और स्मूथ फेड एनीमेशन
                     i_clip = mp.ImageClip(img_path).set_duration(a_clip.duration)
-                    
-                    # स्मूथ फेड-इन और फेड-आउट ट्रांजिशन एनीमेशन
                     i_clip = i_clip.fadein(0.3).fadeout(0.3)
                     image_clips.append(i_clip)
                 
