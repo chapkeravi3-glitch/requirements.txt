@@ -32,15 +32,14 @@ script = st.text_area(
     placeholder="लाइन 1: एक सुंदर जंगल था...\nलाइन 2: वहाँ एक शेर रहता था..."
 )
 
-# 4. तस्वीरें अपलोड करने का बॉक्स (जितनी चाहें उतनी फोटो जोड़ें)
+# 4. तस्वीरें अपलोड करने का बॉक्स
 uploaded_files = st.file_uploader(
-    "4. अपनी तस्वीरें (Images) अपलोड करें (आप चाहें तो एक-एक करके कई फोटो जोड़ सकते हैं):", 
+    "4. अपनी तस्वीरें (Images) अपलोड करें:", 
     type=["jpg", "jpeg", "png"], 
     accept_multiple_files=True,
-    help="यहाँ से आप जितनी चाहें उतनी तस्वीरें अपलोड कर सकते हैं।"
+    help="यहाँ से आप अपनी तस्वीरें अपलोड कर सकते हैं।"
 )
 
-# जितनी फोटो अपलोड होंगी, उनकी कुल संख्या यहाँ दिखेगी
 if uploaded_files:
     st.success(f"✅ कुल {len(uploaded_files)} तस्वीरें जुड़ चुकी हैं!")
 
@@ -72,15 +71,6 @@ if st.button("🚀 प्रो वीडियो बनाएँ", use_contain
                 else:
                     target_size = (1920, 1080) # लॉन्ग वीडियो साइज
                 
-                # Resampling मेथड का सेफ चुनाव
-                try:
-                    resample_method = Image.Resampling.LANCZOS
-                except AttributeError:
-                    try:
-                        resample_method = Image.LANCZOS
-                    except AttributeError:
-                        resample_method = 1
-                
                 for idx, line in enumerate(lines):
                     # 1. ऑडियो बनाना
                     audio_path = f"temp_audio_{idx}.mp3"
@@ -89,13 +79,13 @@ if st.button("🚀 प्रो वीडियो बनाएँ", use_contain
                     a_clip = mp.AudioFileClip(audio_path)
                     audio_clips.append(a_clip)
                     
-                    # 2. अपलोड की गई सूचियों में से फोटो चुनना (अगर फोटो कम हैं तो वे रिपीट हो जाएंगी)
+                    # 2. अपलोड की गई सूचियों में से फोटो चुनना
                     img_file = uploaded_files[idx % len(uploaded_files)]
                     img_path = f"temp_img_{idx}.jpg"
                     
-                    # इमेज को सही साइज़ में बदलना
+                    # इमेज को सही साइज़ में बदलना (बिना किसी ANTIALIAS एरर के)
                     img = Image.open(img_file).convert("RGB")
-                    img = img.resize(target_size, resample_method)
+                    img = img.resize(target_size, Image.BICUBIC)
                     img.save(img_path)
                     
                     # 3. एडवांस्ड एनिमेशन (Zoom-in इफेक्ट + Fade Transition)
